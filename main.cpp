@@ -51,7 +51,7 @@ vector<vector<State>> ReadBoardFile(string path)
     return board;    
 }
 
-vector<vector<State>> Search (int start[2], int goal[2])
+vector<vector<State>> Search (vector<vector<State>> board ,int start[2], int goal[2])
 {
     vector<vector<State>> path_vector{};
     cout<<"No path find"<<"\n";
@@ -59,8 +59,29 @@ vector<vector<State>> Search (int start[2], int goal[2])
     return  path_vector;
 }
 
+string CellString(State cell)
+{
+    switch(cell){
+        case State::KEmpty:return "0   ";
+        case State::KObstacle:return"⛰️   ";
+    }
+}
+void PrintBoard(const vector<vector<State>> board){
+    for(int i=0;i<board.size(); i++){
+        for(int j=0;j<board[i].size();j++){
+            cout<<CellString(board[i][j]);
+        }
+        cout<<"\n";
+    }
+
+}
+
 int main()
 {
+    int init[] = {0,0};
+    int goal[]={4,5};
+    vector<vector<State>> board = ReadBoardFile("1.board");
+    vector<vector<State>> solution = Search(board,init,goal);
+    PrintBoard(solution);
     
-
 }
