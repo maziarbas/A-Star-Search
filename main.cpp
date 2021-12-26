@@ -51,6 +51,12 @@ vector<vector<State>> ReadBoardFile(string path)
     return board;    
 }
 
+int Heuristic(int x1,int y1,int x2,int y2)
+{
+    return abs(x2-x1)+abs(y2-y1);
+}
+
+// A* starts here above supports A* 
 vector<vector<State>> Search (vector<vector<State>> board ,int start[2], int goal[2])
 {
     vector<vector<State>> path_vector{};
@@ -58,6 +64,8 @@ vector<vector<State>> Search (vector<vector<State>> board ,int start[2], int goa
 
     return  path_vector;
 }
+
+
 
 string CellString(State cell)
 {
