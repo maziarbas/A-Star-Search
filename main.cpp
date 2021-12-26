@@ -11,7 +11,7 @@ using std::ifstream;
 using std::cout;
 using std::abs;
 
-enum class State{KEmpty, KObstacle,KClosed};
+enum class State{KEmpty, KObstacle,kClosed};
 
 vector<State> ParseLine(string line)
 {
@@ -51,6 +51,15 @@ vector<vector<State>> ReadBoardFile(string path)
     return board;    
 }
 
+// compares two nodes 
+bool Compare(const vector<int> node1, const vector<int> node2)
+{
+    int node1_f_value = node1[2]+node1[3];
+    int node2_f_value = node2[2]+node2[3];
+    return node1_f_value>node1_f_value;
+}
+
+// calculates the manhatan distance as h value 
 int Heuristic(int x1,int y1,int x2,int y2)
 {
     return abs(x2-x1)+abs(y2-y1);
@@ -60,19 +69,24 @@ void AddToOpen(int x, int y, int g, int h,vector<vector<State>> &grid, vector<ve
 {
     vector<int> node {x,y,g,h};
     open.push_back(node);
-    grid[x][y]=State::KClosed;
+    grid[x][y]=State::kClosed;
 }
 
 // A* starts here above supports A* 
-vector<vector<State>> Search (vector<vector<State>> board ,int start[2], int goal[2])
+vector<vector<State>> Search (vector<vector<State>> grid ,int init[2], int goal[2])
 {
-    vector<vector<State>> path_vector{};
+    vector<vector<int>> open{};
+
+   int x = init[0];
+   int y = init[1];
+   int g=0;
+   int h = Heuristic(x,y,goal[0],goal[1]);
+   AddToOpen(x,y,g,h, grid, open);
+
     cout<<"No path find"<<"\n";
 
-    return  path_vector;
+    return  vector<vector<State>>{};
 }
-
-
 
 string CellString(State cell)
 {
