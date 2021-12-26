@@ -11,7 +11,7 @@ using std::ifstream;
 using std::cout;
 using std::abs;
 
-enum class State{KEmpty, KObstacle};
+enum class State{KEmpty, KObstacle,KClosed};
 
 vector<State> ParseLine(string line)
 {
@@ -54,6 +54,13 @@ vector<vector<State>> ReadBoardFile(string path)
 int Heuristic(int x1,int y1,int x2,int y2)
 {
     return abs(x2-x1)+abs(y2-y1);
+}
+
+void AddToOpen(int x, int y, int g, int h,vector<vector<State>> &grid, vector<vector<int>> &open)
+{
+    vector<int> node {x,y,g,h};
+    open.push_back(node);
+    grid[x][y]=State::KClosed;
 }
 
 // A* starts here above supports A* 
