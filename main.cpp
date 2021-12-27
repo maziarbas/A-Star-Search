@@ -1,152 +1,197 @@
-#include<iostream>
-#include<vector>
-#include<fstream>
-#include<sstream>
-#include<string>
-#include<algorithm>
-
+#include <algorithm>  // for sort
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+using std::cout;
+using std::ifstream;
+using std::istringstream;
+using std::sort;
 using std::string;
 using std::vector;
-using std::istringstream;
-using std::ifstream;
-using std::cout;
 using std::abs;
-using std::sort;
 
-enum class State{KEmpty, KObstacle,kClosed,KPath};
+enum class State {kEmpty, kObstacle, kClosed, kPath, kStart, kFinish};
 
 // directional deltas
 const int delta[4][2]{{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
 
-vector<State> ParseLine(string line)
-{
+
+vector<State> ParseLine(string line) {
     istringstream sline(line);
     int n;
-    char c; 
+    char c;
     vector<State> row;
-
-    while(sline>>n>>c && c==',')
-    {
-        if(n==0)
-        {
-            row.push_back(State::KEmpty);
-        }
-        else{
-            row.push_back(State::KObstacle);
-        }
+    while (sline >> n >> c && c == ',') {
+      if (n == 0) {
+        row.push_back(State::kEmpty);
+      } else {
+        row.push_back(State::kObstacle);
+      }
     }
     return row;
 }
 
-vector<vector<State>> ReadBoardFile(string path){
-    ifstream board_file(path);
-    vector<State> row{};
-    vector<vector<State>> board{};
+
+vector<vector<State>> ReadBoardFile(string path) {
+  ifstream myfile (path);
+  vector<vector<State>> board{};
+  if (myfile) {
     string line;
-
-    if(board_file){
-        while(getline(board_file,line)){
-            row=ParseLine(line);
-            board.push_back(row);
-        }
+    while (getline(myfile, line)) {
+      vector<State> row = ParseLine(line);
+      board.push_back(row);
     }
-    return board;    
+  }
+  return board;
 }
 
-// compares two nodes 
-bool Compare(const vector<int> node1, const vector<int> node2){
-    int node1_f_value = node1[2]+node1[3];
-    int node2_f_value = node2[2]+node2[3];
-    return node1_f_value>node1_f_value;
+
+/**
+ * Compare the F values of two cells.
+ */
+bool Compare(const vector<int> a, const vector<int> b) {
+  int f1 = a[2] + a[3]; // f1 = g1 + h1
+  int f2 = b[2] + b[3]; // f2 = g2 + h2
+  return f1 > f2; 
 }
 
-// calculates the manhatan distance as h value 
-int Heuristic(int x1,int y1,int x2,int y2){
-    return abs(x2-x1)+abs(y2-y1);
-}
-// sorts the open cells 
-void CellSort(vector<vector<int>> *v){
-    sort(v->begin(),v->end(),Compare);
+
+/**
+ * Sort the two-dimensional vector of ints in descending order.
+ */
+void CellSort(vector<vector<int>> *v) {
+  sort(v->begin(), v->end(), Compare);
 }
 
+
+// Calculate the manhattan distance
+int Heuristic(int x1, int y1, int x2, int y2) {
+  return abs(x2 - x1) + abs(y2 - y1);
+}
+
+
+/** 
+ * Check that a cell is valid: on the grid, not an obstacle, and clear. 
+ */
 bool CheckValidCell(int x, int y, vector<vector<State>> &grid) {
   bool on_grid_x = (x >= 0 && x < grid.size());
   bool on_grid_y = (y >= 0 && y < grid[0].size());
   if (on_grid_x && on_grid_y)
-    return grid[x][y] == State::KEmpty;
+    return grid[x][y] == State::kEmpty;
   return false;
 }
 
-void AddToOpen(int x, int y, int g, int h,vector<vector<State>> &grid, vector<vector<int>> &open){
-    vector<int> node {x,y,g,h};
-    open.push_back(node);
-    grid[x][y]=State::kClosed;
+
+/** 
+ * Add a node to the open list and mark it as open. 
+ */
+void AddToOpen(int x, int y, int g, int h, vector<vector<int>> &openlist, vector<vector<State>> &grid) {
+  // Add node to open vector, and mark grid cell as closed.
+  openlist.push_back(vector<int>{x, y, g, h});
+  grid[x][y] = State::kClosed;
 }
 
-//get the neighbor node 
-void ExpandNeighbor(const vector<int> &current,int goal[2], vector<vector<int>> &openlist, vector<vector<State>> &grid){
-    // obtainig current node information 
-    int x = current[0];
-    int y = current[1];
-    int g = current[2];
 
-    // finding the potential neighbors 
-    for(int i=0;i<4;i++)
-    {
-        int x2= x+delta[i][0];
-        int y2= y+delta[i][1];
+/** 
+ * Expand current nodes's neighbors and add them to the open list.
+ */
+void ExpandNeighbors(const vector<int> &current, int goal[2], vector<vector<int>> &openlist, vector<vector<State>> &grid) {
+  // Get current node's data.
+  int x = current[0];
+  int y = current[1];
+  int g = current[2];
 
-        if (CheckValidCell(x2,y2,grid))
-        {
-            int g2 = g+1;
-            int h2 = Heuristic(x2,y2,goal[0],goal[1]);
-            AddToOpen(x2,y2,g2,h2, grid,openlist);
-        }
+  // Loop through current node's potential neighbors.
+  for (int i = 0; i < 4; i++) {
+    int x2 = x + delta[i][0];
+    int y2 = y + delta[i][1];
+
+    // Check that the potential neighbor's x2 and y2 values are on the grid and not closed.
+    if (CheckValidCell(x2, y2, grid)) {
+      // Increment g value and add neighbor to open list.
+      int g2 = g + 1;
+      int h2 = Heuristic(x2, y2, goal[0], goal[1]);
+      AddToOpen(x2, y2, g2, h2, openlist, grid);
     }
+  }
 }
-// A* starts here above supports A* 
-vector<vector<State>> Search (vector<vector<State>> grid ,int init[2], int goal[2]){
-    vector<vector<int>> open{};
-    int x = init[0];
-    int y = init[1];
-    int g=0;
-    int h = Heuristic(x,y,goal[0],goal[1]);
-    AddToOpen(x,y,g,h, grid, open);
-    while(open.size()>0){
-        CellSort(&open);
-        auto current = open.back();
-        open.pop_back();
-        x=current[0];
-        y=current[1];
-        grid[x][y]=State::KPath;
 
-        if(x==goal[0], y==goal[1]){
-            return grid;
-        }
+
+/** 
+ * Implementation of A* search algorithm
+ */
+vector<vector<State>> Search(vector<vector<State>> grid, int init[2], int goal[2]) {
+  // Create the vector of open nodes.
+  vector<vector<int>> open {};
+  
+  // Initialize the starting node.
+  int x = init[0];
+  int y = init[1];
+  int g = 0;
+  int h = Heuristic(x, y, goal[0],goal[1]);
+  AddToOpen(x, y, g, h, open, grid);
+
+  while (open.size() > 0) {
+    // Get the next node
+    CellSort(&open);
+    auto current = open.back();
+    open.pop_back();
+    x = current[0];
+    y = current[1];
+    grid[x][y] = State::kPath;
+
+    // Check if we're done.
+    if (x == goal[0] && y == goal[1]) {
+      grid[init[0]][init[1]] = State::kStart;
+      grid[goal[0]][goal[1]] = State::kFinish;
+      return grid;
     }
-    cout<<"No path find"<<"\n";
-    return  vector<vector<State>>{};
-}
-
-string CellString(State cell){
-    switch(cell){
-        case State::KEmpty:return "0   ";
-        case State::KObstacle:return"⛰️   ";
-    }}
-
-void PrintBoard(const vector<vector<State>> board){
-    for(int i=0;i<board.size(); i++){
-        for(int j=0;j<board[i].size();j++){
-            cout<<CellString(board[i][j]);
-        }
-        cout<<"\n";
-    }}
-
-int main(){
-    int init[] = {0,0};
-    int goal[]={4,5};
-    vector<vector<State>> board = ReadBoardFile("1.board");
-    vector<vector<State>> solution = Search(board,init,goal);
-    PrintBoard(solution);
     
+    // If we're not done, expand search to current node's neighbors.
+    ExpandNeighbors(current, goal, open, grid);
+  }
+  
+  // We've run out of new nodes to explore and haven't found a path.
+  cout << "No path found!" << "\n";
+  return std::vector<vector<State>>{};
+}
+
+
+string CellString(State cell) {
+  switch(cell) {
+    case State::kObstacle: return "⛰️   ";
+    case State::kPath: return "🚗   ";
+    case State::kStart: return "🚦   ";
+    case State::kFinish: return "🏁   ";
+    default: return "0   "; 
+  }
+}
+
+
+void PrintBoard(const vector<vector<State>> board) {
+  for (int i = 0; i < board.size(); i++) {
+    for (int j = 0; j < board[i].size(); j++) {
+      cout << CellString(board[i][j]);
+    }
+    cout << "\n";
+  }
+}
+
+#include "test.cpp"
+
+int main() {
+  int init[2]{0, 0};
+  int goal[2]{4, 5};
+  auto board = ReadBoardFile("1.board");
+  auto solution = Search(board, init, goal);
+  PrintBoard(solution);
+  // Tests
+  TestHeuristic();
+  TestAddToOpen();
+  TestCompare();
+  TestSearch();
+  TestCheckValidCell();
+  TestExpandNeighbors();
 }
