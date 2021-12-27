@@ -15,6 +15,9 @@ using std::sort;
 
 enum class State{KEmpty, KObstacle,kClosed,KPath};
 
+// directional deltas
+const int delta[4][2]{{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
+
 vector<State> ParseLine(string line)
 {
     istringstream sline(line);
@@ -66,12 +69,41 @@ void CellSort(vector<vector<int>> *v){
     sort(v->begin(),v->end(),Compare);
 }
 
+bool CheckValidCell(int x, int y, vector<vector<State>> &grid) {
+  bool on_grid_x = (x >= 0 && x < grid.size());
+  bool on_grid_y = (y >= 0 && y < grid[0].size());
+  if (on_grid_x && on_grid_y)
+    return grid[x][y] == State::KEmpty;
+  return false;
+}
+
 void AddToOpen(int x, int y, int g, int h,vector<vector<State>> &grid, vector<vector<int>> &open){
     vector<int> node {x,y,g,h};
     open.push_back(node);
     grid[x][y]=State::kClosed;
 }
 
+//get the neighbor node 
+void ExpandNeighbor(const vector<int> &current,int goal[2], vector<vector<int>> &openlist, vector<vector<State>> &grid){
+    // obtainig current node information 
+    int x = current[0];
+    int y = current[1];
+    int g = current[2];
+
+    // finding the potential neighbors 
+    for(int i=0;i<4;i++)
+    {
+        int x2= x+delta[i][0];
+        int y2= y+delta[i][1];
+
+        if (CheckValidCell(x2,y2,grid))
+        {
+            int g2 = g+1;
+            int h2 = Heuristic(x2,y2,goal[0],goal[1]);
+            AddToOpen(x2,y2,g2,h2, grid,openlist);
+        }
+    }
+}
 // A* starts here above supports A* 
 vector<vector<State>> Search (vector<vector<State>> grid ,int init[2], int goal[2]){
     vector<vector<int>> open{};
